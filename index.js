@@ -29,11 +29,24 @@ async function run() {
         const database = client.db('uniReside');
         const addedMealCollection = database.collection('addedMeals');
 
+        app.get('/all-category-meals', async(req, res) => {
+            const result = await addedMealCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.get('/meals-by-category/:category', async (req, res) => {
+            const mealCategory = req.params.category;
+            const query = {category : mealCategory}
+            const result = await addedMealCollection.find(query).toArray();
+            res.send(result);
+            console.log(mealCategory);
+        })
+
         app.post('/add-meals', async (req, res) => {
             const mealInfo = req.body;
             const result = await addedMealCollection.insertOne(mealInfo);
             res.send(result);
-            console.log(mealInfo);
+            // console.log(mealInfo);
         })
 
 

@@ -53,7 +53,20 @@ async function run() {
             const result = await addedMealCollection.find(filter).toArray();
             res.send(result);
             console.log(result);
-            console.log(searchQuery);
+            // console.log(searchQuery);
+        })
+        app.get('/filter-by-category/:filter', async(req, res) => {
+            const filterValue = req.params.filter;
+            console.log(filterValue);
+            const query = {category : filterValue}
+            // console.log(query)
+            if(filterValue === 'category'){
+                const result = await addedMealCollection.find().toArray();
+                res.send(result);
+                return;
+            }
+            const result = await addedMealCollection.find(query).toArray();
+            res.send(result);
         })
 
         app.post('/add-meals', async (req, res) => {

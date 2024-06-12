@@ -29,10 +29,10 @@ async function run() {
         const database = client.db('uniReside');
         const addedMealCollection = database.collection('addedMeals');
 
-        app.get('/all-category-meals', async (req, res) => {
-            const result = await addedMealCollection.find().toArray();
-            res.send(result);
-        })
+        // app.get('/all-category-meals', async (req, res) => {
+        //     const result = await addedMealCollection.find().toArray();
+        //     res.send(result);
+        // })
 
         app.get('/meals-by-category/:category', async (req, res) => {
             const mealCategory = req.params.category;
@@ -68,12 +68,37 @@ async function run() {
             const result = await addedMealCollection.find(query).toArray();
             res.send(result);
         })
+        app.get('/meals-by-category', async (req, res) => {
+            const mealCategory = req.query.category;
+            const query = {category : mealCategory}
+            if(mealCategory === 'all'){
+                const result = await addedMealCollection.find().toArray();
+                res.send(result);
+                return;
+            }
+            const result = await addedMealCollection.find(query).toArray();
+            res.send(result);
+            // console.log(mealCategory);
+        })
+        // api to load data by scrolling
+        app.get('/all-category-meals', async (req, res) => {
+            const page = parseInt(req.query.page);
+            const limit = parseInt(req.query.limit);
+
+            const startIndex = (page -1) * limit;
+            const endIndex = page * limit;
+
+            const result = await addedMealCollection.find().toArray();
+            const finalResult = result.slice(startIndex, endIndex);
+            res.send(finalResult);
+            // console.log(page, limit);
+        })
 
         app.post('/add-meals', async (req, res) => {
             const mealInfo = req.body;
             const result = await addedMealCollection.insertOne(mealInfo);
             res.send(result);
-            console.log(mealInfo);
+            // console.log(mealInfo);
         })
 
 

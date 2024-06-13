@@ -29,7 +29,9 @@ async function run() {
         const database = client.db('uniReside');
         // database collection
         const addedMealCollection = database.collection('addedMeals');
-        const likeCollection = database.collection('likes')
+        const likeCollection = database.collection('likes');
+        const userCollection = database.collection('users');
+        const requestedMealCollection = database.collection('requestedMeals');
 
 
         // done
@@ -103,10 +105,36 @@ async function run() {
             res.send(finalResult);
             // console.log(page, limit);
         })
+        // get user
+        app.get('/user', async (req, res) => {
+            const {userEmail} = req.query;
+            const query = {email : userEmail}
+            const result = await userCollection.findOne(query);
+            res.send(result);
+        })
+        // done
+        app.post('/create-user', async (req, res) => {
+            const userInfo = req.body;
+            // console.log(userInfo);
+            const result = await userCollection.insertOne(userInfo);
+            res.send(result);
+        })
+        // done
+        app.post('/request-meal', async (req, res) => {
+            const id = req.query.id;
+            const userInfo = req.body;
+            const query = {_id : new ObjectId(id)}
+            const findResult = await addedMealCollection.findOne(query);
+            // console.log(findResult);
+            const finalInfo = {...findResult, ...userInfo};
+            console.log(finalInfo);
+            const result = await requestedMealCollection.insertOne(finalInfo);
+            res.send(result);
+        })
         // done
         app.post('/check-like', async (req, res) => {
             const { id, email } = req.query;
-            console.log(id, email);
+            // console.log(id, email);
             const query = { likedId: id };
             const findLike = await likeCollection.findOne(query);
             console.log(findLike);

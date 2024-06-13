@@ -54,13 +54,13 @@ async function run() {
             }
             const result = await addedMealCollection.find(filter).toArray();
             res.send(result);
-            console.log(result);
+            // console.log(result);
             // console.log(searchQuery);
         })
         // done
         app.get('/filter-by-category/:filter', async (req, res) => {
             const filterValue = req.params.filter;
-            console.log(filterValue);
+            // console.log(filterValue);
             const query = { category: filterValue }
             // console.log(query)
             if (filterValue === 'category') {
@@ -112,18 +112,44 @@ async function run() {
             const result = await userCollection.findOne(query);
             res.send(result);
         })
-        // done
-        app.get('/check-request', async (req, res) => {
-            const {id} = req.query;
-            const query = {mealId : id}
-            const findRequestedMeal = await requestedMealCollection.findOne(query);
-            if(findRequestedMeal === null){
-                res.send({isRequested : false});
-                return;
+        // like - done
+        app.post('/like', async (req, res) => {
+            const { mealId, userEmail } = req.query;
+            const query1 = { _id: new ObjectId(mealId) }
+            const likeInfo = {
+                mealId, userEmail
             }
-            const result = findRequestedMeal.isRequested;
-            res.send(result);
-            // console.log('hello',result);
+            // console.log(id, userEmail);
+            const query = { mealId: mealId, userEmail: userEmail }
+            const like = await likeCollection.findOne(query);
+            const options = {upsert : true}
+            // console.log(like);
+            if (like) {
+                return res.send({ message: 'Already liked this meal' })
+            }
+            await likeCollection.insertOne(likeInfo)
+            await addedMealCollection.updateOne(query1, {
+                $inc: {
+                    likes: 1
+                }
+            }, options)
+            res.send({ message: 'Like added' });
+        })
+        // like - done
+        app.post('/request', async (req, res) => {
+            const { mealId, userEmail } = req.query;
+            const likeInfo = {
+                mealId, userEmail, ...req.body
+            }
+            // console.log(id, userEmail);
+            const query = { mealId: mealId, userEmail: userEmail }
+            const like = await requestedMealCollection.findOne(query);
+            console.log(like);
+            if (like) {
+                return res.send({ message: 'Already requested' })
+            }
+            await requestedMealCollection.insertOne(likeInfo)
+            res.send({ message: 'Request sent' });
         })
         // done
         app.post('/create-user', async (req, res) => {
@@ -132,71 +158,7 @@ async function run() {
             const result = await userCollection.insertOne(userInfo);
             res.send(result);
         })
-        // done
-        app.post('/request-meal', async (req, res) => {
-            const info = req.body;
-            const userEmail = info.email;
-            const id = info.mealId;
-            const query = { mealId: id }
-            const findMeal = await requestedMealCollection.findOne(query)
-            // console.log(findMeal);
-            if (findMeal === null) {
-                const result = await requestedMealCollection.insertOne(info);
-                res.send(result);
-                return;
-            }
 
-            if (findMeal.email === userEmail) {
-                res.send({ isRequested: true })
-                return;
-            }
-            const result = await requestedMealCollection.insertOne(info);
-            res.send(result);
-
-        })
-        // done
-        app.post('/check-like', async (req, res) => {
-            const { id, email } = req.query;
-            const likeInfo = {
-                likedId: id, email
-            }
-            // console.log(id, email);
-            const query = { likedId: id };
-            const findLike = await likeCollection.findOne(query);
-            // console.log(findLike);
-            if (findLike === null) {
-                const result = await likeCollection.insertOne(likeInfo);
-                // console.log(result);
-                res.send(result);
-                return;
-            }
-            if (email === findLike?.email) {
-                res.send({ isLiked: true });
-                return;
-            }
-            const result = await likeCollection.insertOne(likeInfo);
-            // console.log(result);
-            res.send(result);
-
-        })
-        // done
-        app.put('/update/meal', async (req, res) => {
-            const { id, email, like } = req.query;
-            const query = { _id: new ObjectId(id) };
-            const options = { upsert: true };
-            const updatedMeal = {
-                $inc: {
-                    likes: 1,
-
-                },
-                $set: {
-                    isLiked: true
-                }
-            }
-            const result = await addedMealCollection.updateOne(query, updatedMeal, options)
-            // console.log(result);
-            res.send(result);
-        })
         // done
         app.post('/add-meals', async (req, res) => {
             const mealInfo = req.body;

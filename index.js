@@ -32,6 +32,7 @@ async function run() {
         const likeCollection = database.collection('likes');
         const userCollection = database.collection('users');
         const requestedMealCollection = database.collection('requestedMeals');
+        const reviewCollection = database.collection('reviews');
 
 
         // done
@@ -112,6 +113,13 @@ async function run() {
             const result = await userCollection.findOne(query);
             res.send(result);
         })
+        app.get('/review-count', async(req, res) => {
+            const {id} = req.query;
+            const query = {mealId : id};
+            const result = await reviewCollection.find(query).toArray();
+            console.log(result.length);
+            res.send({length : result.length});
+        })
         // like - done
         app.post('/like', async (req, res) => {
             const { mealId, userEmail } = req.query;
@@ -167,6 +175,12 @@ async function run() {
             // console.log(mealInfo);
         })
 
+        app.post('/review', async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
+            res.send(result);
+            // console.log(review)
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });

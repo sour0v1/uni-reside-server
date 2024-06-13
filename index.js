@@ -105,12 +105,25 @@ async function run() {
             res.send(finalResult);
             // console.log(page, limit);
         })
-        // get user
+        // done
         app.get('/user', async (req, res) => {
-            const {userEmail} = req.query;
-            const query = {email : userEmail}
+            const { userEmail } = req.query;
+            const query = { email: userEmail }
             const result = await userCollection.findOne(query);
             res.send(result);
+        })
+        // done
+        app.get('/check-request', async (req, res) => {
+            const {id} = req.query;
+            const query = {mealId : id}
+            const findRequestedMeal = await requestedMealCollection.findOne(query);
+            if(findRequestedMeal === null){
+                res.send({isRequested : false});
+                return;
+            }
+            const result = findRequestedMeal.isRequested;
+            res.send(result);
+            // console.log('hello',result);
         })
         // done
         app.post('/create-user', async (req, res) => {
@@ -121,34 +134,49 @@ async function run() {
         })
         // done
         app.post('/request-meal', async (req, res) => {
-            const id = req.query.id;
-            const userInfo = req.body;
-            const query = {_id : new ObjectId(id)}
-            const findResult = await addedMealCollection.findOne(query);
-            // console.log(findResult);
-            const finalInfo = {...findResult, ...userInfo};
-            console.log(finalInfo);
-            const result = await requestedMealCollection.insertOne(finalInfo);
+            const info = req.body;
+            const userEmail = info.email;
+            const id = info.mealId;
+            const query = { mealId: id }
+            const findMeal = await requestedMealCollection.findOne(query)
+            // console.log(findMeal);
+            if (findMeal === null) {
+                const result = await requestedMealCollection.insertOne(info);
+                res.send(result);
+                return;
+            }
+
+            if (findMeal.email === userEmail) {
+                res.send({ isRequested: true })
+                return;
+            }
+            const result = await requestedMealCollection.insertOne(info);
             res.send(result);
+
         })
         // done
         app.post('/check-like', async (req, res) => {
             const { id, email } = req.query;
+            const likeInfo = {
+                likedId: id, email
+            }
             // console.log(id, email);
             const query = { likedId: id };
             const findLike = await likeCollection.findOne(query);
-            console.log(findLike);
+            // console.log(findLike);
             if (findLike === null) {
-                const likeInfo = {
-                    likedId: id, email
-                }
                 const result = await likeCollection.insertOne(likeInfo);
                 // console.log(result);
                 res.send(result);
+                return;
             }
-            else if(email === findLike?.email){
-                res.send({isLiked : true});
+            if (email === findLike?.email) {
+                res.send({ isLiked: true });
+                return;
             }
+            const result = await likeCollection.insertOne(likeInfo);
+            // console.log(result);
+            res.send(result);
 
         })
         // done
@@ -159,14 +187,14 @@ async function run() {
             const updatedMeal = {
                 $inc: {
                     likes: 1,
-                    
+
                 },
-                $set : {
-                    isLiked : true
+                $set: {
+                    isLiked: true
                 }
             }
             const result = await addedMealCollection.updateOne(query, updatedMeal, options)
-            console.log(result);
+            // console.log(result);
             res.send(result);
         })
         // done

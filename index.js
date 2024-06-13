@@ -117,7 +117,7 @@ async function run() {
             const {id} = req.query;
             const query = {mealId : id};
             const result = await reviewCollection.find(query).toArray();
-            console.log(result.length);
+            // console.log(result.length);
             res.send({length : result.length});
         })
         // like - done

@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 require('dotenv').config();
+const stripe = require('stripe')(process.env.PAYMENT_GATEWAY_SK)
 const port = process.env.PORT || 5000
 
 // middleware
@@ -33,6 +34,7 @@ async function run() {
         const userCollection = database.collection('users');
         const requestedMealCollection = database.collection('requestedMeals');
         const reviewCollection = database.collection('reviews');
+        const membershipCollection = database.collection('membership');
 
 
         // done
@@ -113,26 +115,50 @@ async function run() {
             const result = await userCollection.findOne(query);
             res.send(result);
         })
-        app.get('/review-count', async(req, res) => {
-            const {id} = req.query;
-            const query = {mealId : id};
+        app.get('/review-count', async (req, res) => {
+            const { id } = req.query;
+            const query = { mealId: id };
             const result = await reviewCollection.find(query).toArray();
             // console.log(result.length);
-            res.send({length : result.length});
+            res.send({ length: result.length });
         })
         app.get('/requested-meals', async (req, res) => {
-            const {email} = req.query;
+            const { email } = req.query;
             // console.log(email);
-            const query = {userEmail : email};
+            const query = { userEmail: email };
             const result = await requestedMealCollection.find(query).toArray();
             res.send(result);
         })
         app.get('/reviews', async (req, res) => {
-            const {email} = req.query;
+            const { email } = req.query;
             // console.log(email);
-            const query = {userEmail : email};
+            const query = { userEmail: email };
             const result = await reviewCollection.find(query).toArray();
             res.send(result);
+        })
+        app.get('/membership', async (req, res) => {
+            const { membership } = req.query;
+            // console.log(membership);
+            const query = { package: membership }
+            const result = await membershipCollection.findOne(query);
+            res.send(result);
+        })
+        // stripe
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.query;
+            const amount = parseInt(price * 100);
+            console.log(amount);
+            if (amount) {
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: amount,
+                    currency: 'usd',
+                    payment_method_types: ['card']
+                });
+                res.send({
+                    clientSecret: paymentIntent.client_secret
+                })
+            }
+
         })
         // like - done
         app.post('/like', async (req, res) => {
@@ -144,7 +170,7 @@ async function run() {
             // console.log(id, userEmail);
             const query = { mealId: mealId, userEmail: userEmail }
             const like = await likeCollection.findOne(query);
-            const options = {upsert : true}
+            const options = { upsert: true }
             // console.log(like);
             if (like) {
                 return res.send({ message: 'Already liked this meal' })

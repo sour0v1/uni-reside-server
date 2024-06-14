@@ -120,6 +120,20 @@ async function run() {
             // console.log(result.length);
             res.send({length : result.length});
         })
+        app.get('/requested-meals', async (req, res) => {
+            const {email} = req.query;
+            // console.log(email);
+            const query = {userEmail : email};
+            const result = await requestedMealCollection.find(query).toArray();
+            res.send(result);
+        })
+        app.get('/reviews', async (req, res) => {
+            const {email} = req.query;
+            // console.log(email);
+            const query = {userEmail : email};
+            const result = await reviewCollection.find(query).toArray();
+            res.send(result);
+        })
         // like - done
         app.post('/like', async (req, res) => {
             const { mealId, userEmail } = req.query;

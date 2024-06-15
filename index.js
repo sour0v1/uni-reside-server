@@ -35,6 +35,7 @@ async function run() {
         const requestedMealCollection = database.collection('requestedMeals');
         const reviewCollection = database.collection('reviews');
         const membershipCollection = database.collection('membership');
+        const paymentCollection = database.collection('payments');
 
 
         // done
@@ -143,11 +144,17 @@ async function run() {
             const result = await membershipCollection.findOne(query);
             res.send(result);
         })
+        app.get('/get-payment-history', async (req, res) => {
+            const {userEmail} = req.query;
+            const query = {email : userEmail};
+            const result = await paymentCollection.find(query).toArray();
+            res.send(result);
+        })
         // stripe
         app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.query;
             const amount = parseInt(price * 100);
-            console.log(amount);
+            // console.log(amount);
             if (amount) {
                 const paymentIntent = await stripe.paymentIntents.create({
                     amount: amount,
@@ -159,6 +166,12 @@ async function run() {
                 })
             }
 
+        })
+        app.post('/payment-history', async (req, res) => {
+            const paymentInfo = req.body;
+            // console.log(paymentInfo);
+            const result = await paymentCollection.insertOne(paymentInfo);
+            res.send(result);
         })
         // like - done
         app.post('/like', async (req, res) => {

@@ -36,7 +36,7 @@ async function run() {
         const reviewCollection = database.collection('reviews');
         const membershipCollection = database.collection('membership');
         const paymentCollection = database.collection('payments');
-
+        const testimonialCollection = database.collection('testimonials');
 
         // done
         app.get('/meals-by-category/:category', async (req, res) => {
@@ -150,6 +150,10 @@ async function run() {
             const result = await paymentCollection.find(query).toArray();
             res.send(result);
         })
+        app.get('/testimonials', async(req, res) => {
+            const result = await testimonialCollection.find().toArray();
+            res.send(result);
+        })
         // stripe
         app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.query;
@@ -233,6 +237,17 @@ async function run() {
             const result = await reviewCollection.insertOne(review);
             res.send(result);
             // console.log(review)
+        })
+        app.patch('/update-user', async (req, res) => {
+            const {email, updatedBadge} = req.query;
+            const query = {email : email};
+            const updatedField = {
+                $set : {
+                    badge : updatedBadge
+                }
+            }
+            const result = await userCollection.updateOne(query, updatedField);
+            res.send(result);
         })
 
         // Send a ping to confirm a successful connection

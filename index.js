@@ -177,8 +177,28 @@ async function run() {
             const result  = await userCollection.find(searchQuery).toArray();
             res.send(result);
         })
+        app.get('/requested-meal-search', async (req, res) => {
+            const {searchValue} = req.query;
+            // console.log(searchValue);
+            const searchQuery = {
+                $or : [
+                    {userEmail : {$regex : new RegExp(searchValue, 'i')}},
+                    {userName : {$regex : new RegExp(searchValue, 'i')}}
+                ]
+            }
+            const result  = await requestedMealCollection.find(searchQuery).toArray();
+            res.send(result);
+        })
         app.get('/user-reviews', async (req, res) => {
             const result = await reviewCollection.find().toArray();
+            res.send(result);
+        })
+        app.get('/all-meals', async (req, res) => {
+            const result = await addedMealCollection.find().toArray();
+            res.send(result);
+        })
+        app.get('/all-requested-meals', async (req, res) => {
+            const result = await requestedMealCollection.find().toArray();
             res.send(result);
         })
         // stripe
@@ -275,6 +295,18 @@ async function run() {
             }
             const result = await userCollection.updateOne(query, updatedField);
             res.send(result);
+        })
+        app.put('/update-status', async (req, res) => {
+            const {id} = req.query;
+            const query = {mealId : id};
+            const updatedStatus = {
+                $set : {
+                    status : 'delivered'
+                }
+            }
+            const result = await requestedMealCollection.updateOne(query, updatedStatus);
+            res.send(result);
+
         })
         app.put('/update-user', async (req, res) => {
             const {email} = req.query;

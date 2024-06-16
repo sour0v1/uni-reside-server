@@ -165,6 +165,18 @@ async function run() {
             const result = await userCollection.find().toArray();
             res.send(result);
         })
+        app.get('/user-search', async (req, res) => {
+            const {searchValue} = req.query;
+            // console.log(searchValue);
+            const searchQuery = {
+                $or : [
+                    {email : {$regex : new RegExp(searchValue, 'i')}},
+                    {name : {$regex : new RegExp(searchValue, 'i')}}
+                ]
+            }
+            const result  = await userCollection.find(searchQuery).toArray();
+            res.send(result);
+        })
         // stripe
         app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.query;

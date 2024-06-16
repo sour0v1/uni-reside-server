@@ -154,6 +154,13 @@ async function run() {
             const result = await testimonialCollection.find().toArray();
             res.send(result);
         })
+        app.get('/meal-length', async(req, res) => {
+            const email = req.query.email;
+            const query = {adminEmail : email};
+            const result = await addedMealCollection.find(query).toArray();
+            const length = result?.length;
+            res.send({length});
+        })
         // stripe
         app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.query;

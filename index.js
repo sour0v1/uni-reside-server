@@ -297,8 +297,12 @@ async function run() {
             res.send(result);
         })
         app.put('/update-status', async (req, res) => {
-            const {id} = req.query;
-            const query = {mealId : id};
+            const {id, email} = req.query;
+            console.log(id, email)
+            const query = {
+                mealId : id,
+                userEmail : email
+            };
             const updatedStatus = {
                 $set : {
                     status : 'delivered'

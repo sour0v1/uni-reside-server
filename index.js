@@ -177,6 +177,10 @@ async function run() {
             const result  = await userCollection.find(searchQuery).toArray();
             res.send(result);
         })
+        app.get('/user-reviews', async (req, res) => {
+            const result = await reviewCollection.find().toArray();
+            res.send(result);
+        })
         // stripe
         app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.query;

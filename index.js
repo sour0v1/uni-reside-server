@@ -161,6 +161,10 @@ async function run() {
             const length = result?.length;
             res.send({length});
         })
+        app.get('/all-users', async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result);
+        })
         // stripe
         app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.query;
@@ -254,6 +258,19 @@ async function run() {
                 }
             }
             const result = await userCollection.updateOne(query, updatedField);
+            res.send(result);
+        })
+        app.put('/update-user', async (req, res) => {
+            const {email} = req.query;
+            console.log(email)
+            const query = {email : email}
+            const options = {upsert : true}
+            const updatedUser = {
+                $set : {
+                    role : 'admin'
+                }
+            }
+            const result = await userCollection.updateOne(query, updatedUser, options);
             res.send(result);
         })
 

@@ -37,6 +37,7 @@ async function run() {
         const membershipCollection = database.collection('membership');
         const paymentCollection = database.collection('payments');
         const testimonialCollection = database.collection('testimonials');
+        const upcomingMealsCollection = database.collection('upcomingMeals');
 
         // done
         app.get('/meals-by-category/:category', async (req, res) => {
@@ -114,6 +115,15 @@ async function run() {
             const { userEmail } = req.query;
             const query = { email: userEmail }
             const result = await userCollection.findOne(query);
+            res.send(result);
+        })
+        app.post('/upcoming-meal', async (req, res) => {
+            const mealInfo = req.body;
+            const result = await upcomingMealsCollection.insertOne(mealInfo);
+            res.send(result);
+        })
+        app.get('/up-meals', async (req, res) => {
+            const result = await upcomingMealsCollection.find().toArray();
             res.send(result);
         })
         app.get('/review-count', async (req, res) => {
@@ -200,6 +210,19 @@ async function run() {
         app.get('/all-requested-meals', async (req, res) => {
             const result = await requestedMealCollection.find().toArray();
             res.send(result);
+        })
+        app.post('/up-to-add', async (req, res) => {
+            const  {id} = req.query;
+            const query = {_id : new ObjectId(id)}
+            const getMealInfo = await upcomingMealsCollection.findOne(query);
+            // console.log(getMealInfo);
+            const insertMeal = await addedMealCollection.insertOne(getMealInfo);
+            console.log(insertMeal);
+            if(insertMeal.insertedId){
+                const deleteMeal = await upcomingMealsCollection.deleteOne(query);
+                // console.log(deleteMeal);
+                res.send(insertMeal);
+            }
         })
         // stripe
         app.post('/create-payment-intent', async (req, res) => {

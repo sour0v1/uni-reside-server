@@ -211,6 +211,14 @@ async function run() {
             const result = await requestedMealCollection.find().toArray();
             res.send(result);
         })
+        app.get('/upcoming-meals', async (req, res) => {
+            const {page, limit} = req.query;
+            const intLimit = parseInt(limit);
+            // console.log(page, limit);
+            const skip = (page - 1) * intLimit;
+            const result = await upcomingMealsCollection.find().skip(skip).limit(intLimit).toArray();
+            res.send(result);
+        })
         app.post('/up-to-add', async (req, res) => {
             const  {id} = req.query;
             const query = {_id : new ObjectId(id)}

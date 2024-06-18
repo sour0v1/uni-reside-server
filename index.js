@@ -100,15 +100,15 @@ async function run() {
         })
         // TODO
         app.get('/all-category-meals', async (req, res) => {
-            const page = parseInt(req.query.page);
-            const limit = parseInt(req.query.limit);
+           const page = parseInt(req.query.page) || 1
+           const limit = parseInt(req.query.limit) || 10
+           const skip = (page - 1) * limit 
 
-            const startIndex = (page - 1) * limit;
-            const endIndex = page * limit;
+           const result = await addedMealCollection.find().skip(skip).limit(limit).toArray();
+           const totalMeals = await addedMealCollection.countDocuments();
+           const hasMore = skip + limit < totalMeals;
+           res.send({result, hasMore})
 
-            const result = await addedMealCollection.find().toArray();
-            const finalResult = result.slice(startIndex, endIndex);
-            res.send(finalResult);
             // console.log(page, limit);
         })
         // done

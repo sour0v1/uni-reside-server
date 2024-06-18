@@ -38,6 +38,7 @@ async function run() {
         const paymentCollection = database.collection('payments');
         const testimonialCollection = database.collection('testimonials');
         const upcomingMealsCollection = database.collection('upcomingMeals');
+        const upMealLikeCollection = database.collection('upMealLikes');
 
         // done
         app.get('/meals-by-category/:category', async (req, res) => {
@@ -212,12 +213,25 @@ async function run() {
             res.send(result);
         })
         app.get('/upcoming-meals', async (req, res) => {
-            const {page, limit} = req.query;
-            const intLimit = parseInt(limit);
+            const  page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 9;
             // console.log(page, limit);
-            const skip = (page - 1) * intLimit;
-            const result = await upcomingMealsCollection.find().skip(skip).limit(intLimit).toArray();
-            res.send(result);
+            const skip = (page - 1) * limit
+            // console.log(page, limit, skip);
+            const result = await upcomingMealsCollection.find().skip(skip).limit(limit).toArray();
+            const totalMeals = await upcomingMealsCollection.countDocuments();
+            const totalPage = Math.ceil(totalMeals / limit);
+            res.send({result, totalPage})
+            // console.log(totalMeals, totalPage);
+        })
+        app.get('/user-badge', async (req, res) => {
+            const {userEmail} = req.query;
+            // console.log(userEmail);
+            const query = {email : userEmail}
+            const result = await userCollection.findOne(query)
+            // console.log(result?.email);
+            res.send({badge : result?.badge})
+
         })
         app.post('/up-to-add', async (req, res) => {
             const  {id} = req.query;
@@ -277,6 +291,40 @@ async function run() {
                 }
             }, options)
             res.send({ message: 'Like added' });
+        })
+        app.post('/up-like', async (req, res) => {
+            const { id, userEmail } = req.query;
+            const singleQuery = {_id : new ObjectId(id)}
+            const options = { upsert: true }
+            console.log(id, userEmail);
+            const mealInfo = {
+                mealId : id,
+                email : userEmail
+            }
+            const query = {
+                mealId : id,
+                email : userEmail
+            }
+            const findUpLikeInfo = await upMealLikeCollection.findOne(query);
+            // console.log(findUpLikeInfo)
+            if(findUpLikeInfo){
+               return res.send({message : 'Already liked the meal'})
+            }
+
+            const insertUpLikeInfo = await upMealLikeCollection.insertOne(mealInfo);
+            // console.log(insertUpLikeInfo)
+            if(insertUpLikeInfo.insertedId){
+                const updateUpMealLike = await upcomingMealsCollection.updateOne(singleQuery, {
+                    $inc : {
+                        likes : 1
+                    }
+                }, options)
+                console.log(updateUpMealLike)
+                if(updateUpMealLike.modifiedCount){
+                    res.send({message : 'Like Added'})
+                }
+            }
+            
         })
         // like - done
         app.post('/request', async (req, res) => {

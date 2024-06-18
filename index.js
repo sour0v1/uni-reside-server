@@ -51,6 +51,7 @@ async function run() {
         // done
         app.get('/search-meals/:query', async (req, res) => {
             const searchQuery = req.params.query;
+            console.log(searchQuery.length)
             const filter = {
                 $or: [
                     {
@@ -77,6 +78,40 @@ async function run() {
             const result = await addedMealCollection.find(query).toArray();
             res.send(result);
         })
+        app.get('/filter-by-price', async (req, res) => {
+            const filterValue = req.query.priceValue;
+            // console.log(filterValue);
+            let highestPrice;
+            let lowestPrice;
+            if (filterValue === 'first') {
+                highestPrice = 20;
+                lowestPrice = 0;
+            }
+            if (filterValue === 'second') {
+                highestPrice = 40;
+                lowestPrice = 20;
+            }
+            if (filterValue === 'third') {
+                highestPrice = 80;
+                lowestPrice = 40;
+            }
+            if (filterValue === 'fourth') {
+                highestPrice = Infinity;
+                lowestPrice = 80;
+            }
+            // console.log(typeof highestPrice)
+            const query = {
+                price: { $gte: lowestPrice, $lte: highestPrice }
+            }
+            if (filterValue === 'category') {
+                const result = await addedMealCollection.find().toArray();
+                res.send(result);
+                return;
+            }
+            const result = await addedMealCollection.find(query).toArray();
+            res.send(result);
+            console.log(result);
+        })
         // done
         app.get('/meals-by-category', async (req, res) => {
             const mealCategory = req.query.category;
@@ -98,16 +133,16 @@ async function run() {
             const result = await addedMealCollection.findOne(query)
             res.send(result);
         })
-        // TODO
+        // done
         app.get('/all-category-meals', async (req, res) => {
-           const page = parseInt(req.query.page) || 1
-           const limit = parseInt(req.query.limit) || 10
-           const skip = (page - 1) * limit 
+            const page = parseInt(req.query.page) || 1
+            const limit = parseInt(req.query.limit) || 10
+            const skip = (page - 1) * limit
 
-           const result = await addedMealCollection.find().skip(skip).limit(limit).toArray();
-           const totalMeals = await addedMealCollection.countDocuments();
-           const hasMore = skip + limit < totalMeals;
-           res.send({result, hasMore})
+            const result = await addedMealCollection.find().skip(skip).limit(limit).toArray();
+            const totalMeals = await addedMealCollection.countDocuments();
+            const hasMore = skip + limit < totalMeals;
+            res.send({ result, hasMore })
 
             // console.log(page, limit);
         })
@@ -156,48 +191,48 @@ async function run() {
             res.send(result);
         })
         app.get('/get-payment-history', async (req, res) => {
-            const {userEmail} = req.query;
-            const query = {email : userEmail};
+            const { userEmail } = req.query;
+            const query = { email: userEmail };
             const result = await paymentCollection.find(query).toArray();
             res.send(result);
         })
-        app.get('/testimonials', async(req, res) => {
+        app.get('/testimonials', async (req, res) => {
             const result = await testimonialCollection.find().toArray();
             res.send(result);
         })
-        app.get('/meal-length', async(req, res) => {
+        app.get('/meal-length', async (req, res) => {
             const email = req.query.email;
-            const query = {adminEmail : email};
+            const query = { adminEmail: email };
             const result = await addedMealCollection.find(query).toArray();
             const length = result?.length;
-            res.send({length});
+            res.send({ length });
         })
         app.get('/all-users', async (req, res) => {
             const result = await userCollection.find().toArray();
             res.send(result);
         })
         app.get('/user-search', async (req, res) => {
-            const {searchValue} = req.query;
+            const { searchValue } = req.query;
             // console.log(searchValue);
             const searchQuery = {
-                $or : [
-                    {email : {$regex : new RegExp(searchValue, 'i')}},
-                    {name : {$regex : new RegExp(searchValue, 'i')}}
+                $or: [
+                    { email: { $regex: new RegExp(searchValue, 'i') } },
+                    { name: { $regex: new RegExp(searchValue, 'i') } }
                 ]
             }
-            const result  = await userCollection.find(searchQuery).toArray();
+            const result = await userCollection.find(searchQuery).toArray();
             res.send(result);
         })
         app.get('/requested-meal-search', async (req, res) => {
-            const {searchValue} = req.query;
+            const { searchValue } = req.query;
             // console.log(searchValue);
             const searchQuery = {
-                $or : [
-                    {userEmail : {$regex : new RegExp(searchValue, 'i')}},
-                    {userName : {$regex : new RegExp(searchValue, 'i')}}
+                $or: [
+                    { userEmail: { $regex: new RegExp(searchValue, 'i') } },
+                    { userName: { $regex: new RegExp(searchValue, 'i') } }
                 ]
             }
-            const result  = await requestedMealCollection.find(searchQuery).toArray();
+            const result = await requestedMealCollection.find(searchQuery).toArray();
             res.send(result);
         })
         app.get('/user-reviews', async (req, res) => {
@@ -213,7 +248,7 @@ async function run() {
             res.send(result);
         })
         app.get('/upcoming-meals', async (req, res) => {
-            const  page = parseInt(req.query.page) || 1;
+            const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 9;
             // console.log(page, limit);
             const skip = (page - 1) * limit
@@ -221,26 +256,26 @@ async function run() {
             const result = await upcomingMealsCollection.find().skip(skip).limit(limit).toArray();
             const totalMeals = await upcomingMealsCollection.countDocuments();
             const totalPage = Math.ceil(totalMeals / limit);
-            res.send({result, totalPage})
+            res.send({ result, totalPage })
             // console.log(totalMeals, totalPage);
         })
         app.get('/user-badge', async (req, res) => {
-            const {userEmail} = req.query;
+            const { userEmail } = req.query;
             // console.log(userEmail);
-            const query = {email : userEmail}
+            const query = { email: userEmail }
             const result = await userCollection.findOne(query)
             // console.log(result?.email);
-            res.send({badge : result?.badge})
+            res.send({ badge: result?.badge })
 
         })
         app.post('/up-to-add', async (req, res) => {
-            const  {id} = req.query;
-            const query = {_id : new ObjectId(id)}
+            const { id } = req.query;
+            const query = { _id: new ObjectId(id) }
             const getMealInfo = await upcomingMealsCollection.findOne(query);
             // console.log(getMealInfo);
             const insertMeal = await addedMealCollection.insertOne(getMealInfo);
             console.log(insertMeal);
-            if(insertMeal.insertedId){
+            if (insertMeal.insertedId) {
                 const deleteMeal = await upcomingMealsCollection.deleteOne(query);
                 // console.log(deleteMeal);
                 res.send(insertMeal);
@@ -294,37 +329,37 @@ async function run() {
         })
         app.post('/up-like', async (req, res) => {
             const { id, userEmail } = req.query;
-            const singleQuery = {_id : new ObjectId(id)}
+            const singleQuery = { _id: new ObjectId(id) }
             const options = { upsert: true }
             console.log(id, userEmail);
             const mealInfo = {
-                mealId : id,
-                email : userEmail
+                mealId: id,
+                email: userEmail
             }
             const query = {
-                mealId : id,
-                email : userEmail
+                mealId: id,
+                email: userEmail
             }
             const findUpLikeInfo = await upMealLikeCollection.findOne(query);
             // console.log(findUpLikeInfo)
-            if(findUpLikeInfo){
-               return res.send({message : 'Already liked the meal'})
+            if (findUpLikeInfo) {
+                return res.send({ message: 'Already liked the meal' })
             }
 
             const insertUpLikeInfo = await upMealLikeCollection.insertOne(mealInfo);
             // console.log(insertUpLikeInfo)
-            if(insertUpLikeInfo.insertedId){
+            if (insertUpLikeInfo.insertedId) {
                 const updateUpMealLike = await upcomingMealsCollection.updateOne(singleQuery, {
-                    $inc : {
-                        likes : 1
+                    $inc: {
+                        likes: 1
                     }
                 }, options)
                 console.log(updateUpMealLike)
-                if(updateUpMealLike.modifiedCount){
-                    res.send({message : 'Like Added'})
+                if (updateUpMealLike.modifiedCount) {
+                    res.send({ message: 'Like Added' })
                 }
             }
-            
+
         })
         // like - done
         app.post('/request', async (req, res) => {
@@ -365,26 +400,26 @@ async function run() {
             // console.log(review)
         })
         app.patch('/update-user', async (req, res) => {
-            const {email, updatedBadge} = req.query;
-            const query = {email : email};
+            const { email, updatedBadge } = req.query;
+            const query = { email: email };
             const updatedField = {
-                $set : {
-                    badge : updatedBadge
+                $set: {
+                    badge: updatedBadge
                 }
             }
             const result = await userCollection.updateOne(query, updatedField);
             res.send(result);
         })
         app.put('/update-status', async (req, res) => {
-            const {id, email} = req.query;
+            const { id, email } = req.query;
             console.log(id, email)
             const query = {
-                mealId : id,
-                userEmail : email
+                mealId: id,
+                userEmail: email
             };
             const updatedStatus = {
-                $set : {
-                    status : 'delivered'
+                $set: {
+                    status: 'delivered'
                 }
             }
             const result = await requestedMealCollection.updateOne(query, updatedStatus);
@@ -392,13 +427,13 @@ async function run() {
 
         })
         app.put('/update-user', async (req, res) => {
-            const {email} = req.query;
+            const { email } = req.query;
             console.log(email)
-            const query = {email : email}
-            const options = {upsert : true}
+            const query = { email: email }
+            const options = { upsert: true }
             const updatedUser = {
-                $set : {
-                    role : 'admin'
+                $set: {
+                    role: 'admin'
                 }
             }
             const result = await userCollection.updateOne(query, updatedUser, options);

@@ -133,6 +133,12 @@ async function run() {
             const result = await addedMealCollection.findOne(query)
             res.send(result);
         })
+        app.get('/meal', async (req, res) => {
+            const {id} = req.query;
+            const query = {_id : new ObjectId(id)};
+            const result = await addedMealCollection.findOne(query);
+            res.send(result);
+        })
         // done
         app.get('/all-category-meals', async (req, res) => {
             const page = parseInt(req.query.page) || 1
@@ -410,6 +416,10 @@ async function run() {
             const result = await userCollection.updateOne(query, updatedField);
             res.send(result);
         })
+        app.put('/update-meal', async (req, res) => {
+            const mealInfo = req.body;
+            console.log(mealInfo);
+        })
         app.put('/update-status', async (req, res) => {
             const { id, email } = req.query;
             console.log(id, email)
@@ -426,6 +436,18 @@ async function run() {
             res.send(result);
 
         })
+        app.put('/edit-reviews', async (req, res) => {
+            const {id, value} = req.query;
+            console.log(id)
+            const query = {_id : new ObjectId(id)}
+            const updatedReview = {
+                $set : {
+                    review : value
+                }
+            }
+            const result = await reviewCollection.updateOne(query, updatedReview)
+            res.send(result)
+        })
         app.put('/update-user', async (req, res) => {
             const { email } = req.query;
             console.log(email)
@@ -438,6 +460,24 @@ async function run() {
             }
             const result = await userCollection.updateOne(query, updatedUser, options);
             res.send(result);
+        })
+        app.delete('/delete-meal', async (req, res) => {
+            const {id} = req.query;
+            const query = {_id : new ObjectId(id)}
+            const result = await addedMealCollection.deleteOne(query);
+            res.send(result)
+        })
+        app.delete('/delete-review', async (req, res) => {
+            const {id} = req.query;
+            const query = {_id : new ObjectId(id)}
+            const result = await reviewCollection.deleteOne(query);
+            res.send(result)
+        })
+        app.delete('/delete-request', async (req, res) => {
+            const {id} = req.query;
+            const query = {_id : new ObjectId(id)}
+            const result = await requestedMealCollection.deleteOne(query);
+            res.send(result)
         })
 
         // Send a ping to confirm a successful connection

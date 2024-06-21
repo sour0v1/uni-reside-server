@@ -204,7 +204,7 @@ async function run() {
             // console.log(page, limit);
         })
         // done
-        app.get('/user', async (req, res) => {
+        app.get('/user', verifyToken, async (req, res) => {
             const { userEmail } = req.query;
             const query = { email: userEmail }
             const result = await userCollection.findOne(query);
@@ -215,7 +215,7 @@ async function run() {
             const result = await upcomingMealsCollection.insertOne(mealInfo);
             res.send(result);
         })
-        app.get('/up-meals', async (req, res) => {
+        app.get('/up-meals', verifyToken, verifyAdmin, async (req, res) => {
             const result = await upcomingMealsCollection.find().toArray();
             res.send(result);
         })
@@ -226,14 +226,14 @@ async function run() {
             // console.log(result.length);
             res.send({ length: result.length });
         })
-        app.get('/requested-meals', async (req, res) => {
+        app.get('/requested-meals', verifyToken, async (req, res) => {
             const { email } = req.query;
             // console.log(email);
             const query = { userEmail: email };
             const result = await requestedMealCollection.find(query).toArray();
             res.send(result);
         })
-        app.get('/reviews', async (req, res) => {
+        app.get('/reviews', verifyToken, async (req, res) => {
             const { email } = req.query;
             // console.log(email);
             const query = { userEmail: email };
@@ -303,11 +303,11 @@ async function run() {
             const result = await requestedMealCollection.find(searchQuery).toArray();
             res.send(result);
         })
-        app.get('/user-reviews', async (req, res) => {
+        app.get('/user-reviews', verifyToken, verifyAdmin, async (req, res) => {
             const result = await reviewCollection.find().toArray();
             res.send(result);
         })
-        app.get('/all-meals', async (req, res) => {
+        app.get('/all-meals', verifyToken, verifyAdmin, async (req, res) => {
             const result = await addedMealCollection.find().toArray();
             res.send(result);
         })
@@ -336,7 +336,7 @@ async function run() {
             res.send({ badge: result?.badge })
 
         })
-        app.post('/up-to-add', async (req, res) => {
+        app.post('/up-to-add', verifyToken, verifyAdmin, async (req, res) => {
             const { id } = req.query;
             const query = { _id: new ObjectId(id) }
             const getMealInfo = await upcomingMealsCollection.findOne(query);
@@ -454,20 +454,20 @@ async function run() {
         })
 
         // done
-        app.post('/add-meals', async (req, res) => {
+        app.post('/add-meals', verifyToken, verifyAdmin, async (req, res) => {
             const mealInfo = req.body;
             const result = await addedMealCollection.insertOne(mealInfo);
             res.send(result);
             // console.log(mealInfo);
         })
 
-        app.post('/review', async (req, res) => {
+        app.post('/review', verifyToken, async (req, res) => {
             const review = req.body;
             const result = await reviewCollection.insertOne(review);
             res.send(result);
             // console.log(review)
         })
-        app.patch('/update-user', async (req, res) => {
+        app.patch('/update-user', verifyToken, verifyAdmin, async (req, res) => {
             const { email, updatedBadge } = req.query;
             const query = { email: email };
             const updatedField = {
@@ -498,7 +498,7 @@ async function run() {
             res.send(result);
 
         })
-        app.put('/edit-reviews', async (req, res) => {
+        app.put('/edit-reviews', verifyToken, async (req, res) => {
             const { id, value } = req.query;
             console.log(id)
             const query = { _id: new ObjectId(id) }
@@ -510,7 +510,7 @@ async function run() {
             const result = await reviewCollection.updateOne(query, updatedReview)
             res.send(result)
         })
-        app.put('/update-user', async (req, res) => {
+        app.put('/update-user', verifyToken, verifyAdmin, async (req, res) => {
             const { email } = req.query;
             console.log(email)
             const query = { email: email }
@@ -529,13 +529,13 @@ async function run() {
             const result = await addedMealCollection.deleteOne(query);
             res.send(result)
         })
-        app.delete('/delete-review', async (req, res) => {
+        app.delete('/delete-review', verifyToken, verifyAdmin, async (req, res) => {
             const { id } = req.query;
             const query = { _id: new ObjectId(id) }
             const result = await reviewCollection.deleteOne(query);
             res.send(result)
         })
-        app.delete('/delete-request', async (req, res) => {
+        app.delete('/delete-request', verifyToken, async (req, res) => {
             const { id } = req.query;
             const query = { _id: new ObjectId(id) }
             const result = await requestedMealCollection.deleteOne(query);

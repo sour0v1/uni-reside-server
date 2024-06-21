@@ -9,7 +9,7 @@ const port = process.env.PORT || 5000
 
 // middleware
 app.use(cors({
-    origin: ['http://localhost:5173'],
+    origin: ['http://localhost:5173', 'https://uni-reside.web.app', 'https://uni-reside.firebaseapp.com'],
     credentials: true
 }));
 app.use(express.json());
@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 // middleware
 const verifyToken = async (req, res, next) => {
     const token = req.cookies?.token;
-    console.log(token);
+    // console.log(token);
     if (!token) {
         return res.status(401).send('unauthorized access')
     }
@@ -40,7 +40,7 @@ const verifyToken = async (req, res, next) => {
         if (err) {
             return res.status(403).send('forbidden access');
         }
-        console.log(decoded)
+        // console.log(decoded)
         req.user = decoded;
         next();
     })
@@ -50,7 +50,7 @@ const verifyToken = async (req, res, next) => {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
         const database = client.db('uniReside');
         // database collection
         const addedMealCollection = database.collection('addedMeals');
@@ -64,12 +64,17 @@ async function run() {
         const upcomingMealsCollection = database.collection('upcomingMeals');
         const upMealLikeCollection = database.collection('upMealLikes');
 
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict"
 
+        }
         const verifyAdmin = async (req, res, next) => {
-            console.log('user -', req.user.email)
+            // console.log('user -', req.user.email)
             const query = { email: req.user.email };
             const result = await userCollection.findOne(query);
-            console.log(result?.role)
+            // console.log(result?.role)
             if (result?.role !== 'admin') {
                 return res.status(403).send('forbidden access');
             }
@@ -78,18 +83,13 @@ async function run() {
         // jwt api
         app.post('/jwt', async (req, res) => {
             const user = req.body;
-            console.log(user);
+            // console.log(user);
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-            res.cookie('token', token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'none'
-
-            })
+            res.cookie('token', token, cookieOptions)
                 .send({ success: true })
         })
         app.post('/remove-token', async (req, res) => {
-            res.clearCookie('token', { maxAge: 0 }).send({ success: true })
+            res.clearCookie('token', {...cookieOptions, maxAge: 0 }).send({ success: true })
         })
         // done
         app.get('/meals-by-category/:category', async (req, res) => {
@@ -102,7 +102,7 @@ async function run() {
         // done
         app.get('/search-meals/:query', async (req, res) => {
             const searchQuery = req.params.query;
-            console.log(searchQuery.length)
+            // console.log(searchQuery.length)
             const filter = {
                 $or: [
                     {
@@ -161,7 +161,7 @@ async function run() {
             }
             const result = await addedMealCollection.find(query).toArray();
             res.send(result);
-            console.log(result);
+            // console.log(result);
         })
         // done
         app.get('/meals-by-category', async (req, res) => {
@@ -281,15 +281,15 @@ async function run() {
             res.send(result);
         })
         app.get('/isAdmin', async (req, res) => {
-            const {email} = req.query;
-            const query = {email : email}
+            const { email } = req.query;
+            const query = { email: email }
             const result = await userCollection.findOne(query);
-            console.log(result?.role);
-            if(result?.role === 'admin'){
-               return res.send({isAdmin : true})
+            // console.log(result?.role);
+            if (result?.role === 'admin') {
+                return res.send({ isAdmin: true })
             }
-            return res.send({isAdmin : false})
-            
+            return res.send({ isAdmin: false })
+
         })
         app.get('/requested-meal-search', async (req, res) => {
             const { searchValue } = req.query;
@@ -342,7 +342,7 @@ async function run() {
             const getMealInfo = await upcomingMealsCollection.findOne(query);
             // console.log(getMealInfo);
             const insertMeal = await addedMealCollection.insertOne(getMealInfo);
-            console.log(insertMeal);
+            // console.log(insertMeal);
             if (insertMeal.insertedId) {
                 const deleteMeal = await upcomingMealsCollection.deleteOne(query);
                 // console.log(deleteMeal);
@@ -399,7 +399,7 @@ async function run() {
             const { id, userEmail } = req.query;
             const singleQuery = { _id: new ObjectId(id) }
             const options = { upsert: true }
-            console.log(id, userEmail);
+            // console.log(id, userEmail);
             const mealInfo = {
                 mealId: id,
                 email: userEmail
@@ -422,7 +422,7 @@ async function run() {
                         likes: 1
                     }
                 }, options)
-                console.log(updateUpMealLike)
+                // console.log(updateUpMealLike)
                 if (updateUpMealLike.modifiedCount) {
                     res.send({ message: 'Like Added' })
                 }
@@ -438,7 +438,7 @@ async function run() {
             // console.log(id, userEmail);
             const query = { mealId: mealId, userEmail: userEmail }
             const like = await requestedMealCollection.findOne(query);
-            console.log(like);
+            // console.log(like);
             if (like) {
                 return res.send({ message: 'Already requested' })
             }
@@ -467,7 +467,7 @@ async function run() {
             res.send(result);
             // console.log(review)
         })
-        app.patch('/update-user', verifyToken, verifyAdmin, async (req, res) => {
+        app.patch('/update-user', verifyToken, async (req, res) => {
             const { email, updatedBadge } = req.query;
             const query = { email: email };
             const updatedField = {
@@ -480,11 +480,11 @@ async function run() {
         })
         app.put('/update-meal', async (req, res) => {
             const mealInfo = req.body;
-            console.log(mealInfo);
+            // console.log(mealInfo);
         })
         app.put('/update-status', async (req, res) => {
             const { id, email } = req.query;
-            console.log(id, email)
+            // console.log(id, email)
             const query = {
                 mealId: id,
                 userEmail: email
@@ -500,7 +500,7 @@ async function run() {
         })
         app.put('/edit-reviews', verifyToken, async (req, res) => {
             const { id, value } = req.query;
-            console.log(id)
+            // console.log(id)
             const query = { _id: new ObjectId(id) }
             const updatedReview = {
                 $set: {
@@ -512,7 +512,7 @@ async function run() {
         })
         app.put('/update-user', verifyToken, verifyAdmin, async (req, res) => {
             const { email } = req.query;
-            console.log(email)
+            // console.log(email)
             const query = { email: email }
             const options = { upsert: true }
             const updatedUser = {
@@ -543,7 +543,7 @@ async function run() {
         })
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error

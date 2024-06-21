@@ -1,13 +1,19 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const cookieParser = require('cookie-parser')
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.PAYMENT_GATEWAY_SK)
 const port = process.env.PORT || 5000
 
 // middleware
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:5173'],
+    credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // mongodb connection
 
@@ -22,6 +28,24 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
+// middleware
+const verifyToken = async (req, res, next) => {
+    const token = req.cookies?.token;
+    console.log(token);
+    if (!token) {
+        return res.status(401).send('unauthorized access')
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(403).send('forbidden access');
+        }
+        console.log(decoded)
+        req.user = decoded;
+        next();
+    })
+
+}
 
 async function run() {
     try {
@@ -40,6 +64,33 @@ async function run() {
         const upcomingMealsCollection = database.collection('upcomingMeals');
         const upMealLikeCollection = database.collection('upMealLikes');
 
+
+        const verifyAdmin = async (req, res, next) => {
+            console.log('user -', req.user.email)
+            const query = { email: req.user.email };
+            const result = await userCollection.findOne(query);
+            console.log(result?.role)
+            if (result?.role !== 'admin') {
+                return res.status(403).send('forbidden access');
+            }
+            next();
+        }
+        // jwt api
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            console.log(user);
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'none'
+
+            })
+                .send({ success: true })
+        })
+        app.post('/remove-token', async (req, res) => {
+            res.clearCookie('token', { maxAge: 0 }).send({ success: true })
+        })
         // done
         app.get('/meals-by-category/:category', async (req, res) => {
             const mealCategory = req.params.category;
@@ -134,8 +185,8 @@ async function run() {
             res.send(result);
         })
         app.get('/meal', async (req, res) => {
-            const {id} = req.query;
-            const query = {_id : new ObjectId(id)};
+            const { id } = req.query;
+            const query = { _id: new ObjectId(id) };
             const result = await addedMealCollection.findOne(query);
             res.send(result);
         })
@@ -196,7 +247,7 @@ async function run() {
             const result = await membershipCollection.findOne(query);
             res.send(result);
         })
-        app.get('/get-payment-history', async (req, res) => {
+        app.get('/get-payment-history', verifyToken, async (req, res) => {
             const { userEmail } = req.query;
             const query = { email: userEmail };
             const result = await paymentCollection.find(query).toArray();
@@ -213,7 +264,7 @@ async function run() {
             const length = result?.length;
             res.send({ length });
         })
-        app.get('/all-users', async (req, res) => {
+        app.get('/all-users', verifyToken, verifyAdmin, async (req, res) => {
             const result = await userCollection.find().toArray();
             res.send(result);
         })
@@ -228,6 +279,17 @@ async function run() {
             }
             const result = await userCollection.find(searchQuery).toArray();
             res.send(result);
+        })
+        app.get('/isAdmin', async (req, res) => {
+            const {email} = req.query;
+            const query = {email : email}
+            const result = await userCollection.findOne(query);
+            console.log(result?.role);
+            if(result?.role === 'admin'){
+               return res.send({isAdmin : true})
+            }
+            return res.send({isAdmin : false})
+            
         })
         app.get('/requested-meal-search', async (req, res) => {
             const { searchValue } = req.query;
@@ -437,12 +499,12 @@ async function run() {
 
         })
         app.put('/edit-reviews', async (req, res) => {
-            const {id, value} = req.query;
+            const { id, value } = req.query;
             console.log(id)
-            const query = {_id : new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const updatedReview = {
-                $set : {
-                    review : value
+                $set: {
+                    review: value
                 }
             }
             const result = await reviewCollection.updateOne(query, updatedReview)
@@ -462,20 +524,20 @@ async function run() {
             res.send(result);
         })
         app.delete('/delete-meal', async (req, res) => {
-            const {id} = req.query;
-            const query = {_id : new ObjectId(id)}
+            const { id } = req.query;
+            const query = { _id: new ObjectId(id) }
             const result = await addedMealCollection.deleteOne(query);
             res.send(result)
         })
         app.delete('/delete-review', async (req, res) => {
-            const {id} = req.query;
-            const query = {_id : new ObjectId(id)}
+            const { id } = req.query;
+            const query = { _id: new ObjectId(id) }
             const result = await reviewCollection.deleteOne(query);
             res.send(result)
         })
         app.delete('/delete-request', async (req, res) => {
-            const {id} = req.query;
-            const query = {_id : new ObjectId(id)}
+            const { id } = req.query;
+            const query = { _id: new ObjectId(id) }
             const result = await requestedMealCollection.deleteOne(query);
             res.send(result)
         })
